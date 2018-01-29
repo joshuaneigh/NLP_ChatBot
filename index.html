@@ -3,10 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <title>Title</title>
+    <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-    <input type="text" placeholder="Message..." id="message">
-    <button id="send">Send</button>
-    <script src="js/chat-client.js" type="text/javascript"></script>
+    <div class="chat-containter">
+        <div class="messages-container">
+            <div id="messages"></div>
+        </div>
+        <div class="chat-bar">
+            <input type="text" placeholder="Message..." id="message-input">
+            <button id="send">Send</button>
+        </div>
+        <script src="js/chat-client.js" type="text/javascript"></script>
+    </div>
 </body>
 </html>

@@ -5,6 +5,7 @@
 *.pdf
 *.docx
 **/.DS_Store
+__pycache__
 
 # User-specific stuff:
 .idea/**/workspace.xml

@@ -48,10 +48,15 @@ def handshake(conn):
 
 
 def launch():
+    print("Server Started")
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.bind((HOST, PORT))
     s.listen(5)
-    conn, addr = s.accept()
-    handshake(conn)
-    print('Connected by', addr)
-    Thread(target=handle_client, args=(conn, addr)).start()
+    while 1:
+        print("Listening for connection on port", PORT, "...", sep=" ")
+        conn, addr = s.accept()
+        handshake(conn)
+        print('Connected by', addr)
+        Thread(target=handle_client, args=(conn, addr)).start()
+
+# TODO: Close listening socket from another thread to cancel s.accept()

@@ -1,10 +1,12 @@
 import importlib
 
 
-def launch(args=[]):
+def launch(*args):
     try:
-        if len(args) == 0:
+        if not args:
             args = input("What to launch? ").strip().split()
+        else:
+            args = args[0]
         module = importlib.import_module("." + args[0], MODULE_PKG)
         if len(args) == 1:
             module.launch()

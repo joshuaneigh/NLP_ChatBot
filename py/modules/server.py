@@ -45,12 +45,20 @@ def message_client(conn, message):
 
 
 def handle_client(conn, addr):
+    print(addr, "Connection opened. Waiting for nickname...")
+    CLIENTS[addr] = conn
+    name = ""
     while 1:
         try:
             data = conn.recv(4096)
-            if not data:
+            if (not data) or (data[0] == 0x88 and data[1] == 0x82):
+                print(addr, "Disconnected with null response")
                 break
-            print(addr, ": ", get_str_from_socket_data(data), sep="")
+            elif not len(name):
+                name = get_str_from_socket_data(data)
+                print(addr, "Connected as", name)
+            else:
+                print(name, ": ", get_str_from_socket_data(data), sep="")
         except socket.timeout:
             continue
         except ConnectionResetError:
@@ -59,9 +67,10 @@ def handle_client(conn, addr):
             break
 
     conn.close()
-    CLIENTS.pop(addr, None)  # None prevents KeyError if client not added to dictionary
-    THREADS.remove(threading.current_thread())
-    print("Client disconnected at", addr)
+    THREADS.remove(threading.current_thread())  # TODO: Figure out why threads aren't removed from list
+    CLIENTS.pop(addr, None)
+    if name:
+        print(addr, "Disconnected as", name)
 
 
 def handshake(conn):
@@ -105,10 +114,8 @@ def handle_server(s):
     while 1:
         try:
             conn, addr = s.accept()
-            conn.settimeout(5)
             handshake(conn)
-            print("Client connected at", addr)
-            CLIENTS[addr] = conn
+            conn.settimeout(5)
             t = threading.Thread(target=handle_client, args=(conn, addr))
             THREADS.append(t)
             t.start()
@@ -126,7 +133,7 @@ def launch():
     while 1:
         i = input().strip()
         if i == "q" or i == "quit":
-            print("Killing server with", len(THREADS), "threads...")
+            print("Killing server with", len(THREADS), "threads and", len(CLIENTS), "clients...")
             s.close()
             for client in CLIENTS:
                 CLIENTS[client].close()

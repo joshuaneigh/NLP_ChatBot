@@ -21,7 +21,7 @@ MODULE_PKG = "modules"
 METADATA = {
     "Authors": ("Joshua Neighbarger", "Karan Singla", "Zachary Chandler"),
     "App Name": ("NLP Chat Console (Alan)",),
-    "Version": ("29 January 2018",)
+    "Version": ("30 January 2018",)
 }
 HEADER = METADATA["App Name"][0] + ",  " + METADATA["Version"][0]
 PROMPT = ">>>:  "

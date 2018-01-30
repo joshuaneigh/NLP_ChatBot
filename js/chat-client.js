@@ -39,19 +39,49 @@ function sendMessage() {
     }
 }
 
+function promptName() {
+    let prompt = document.createElement("div"),
+        title = document.createElement("h3"),
+        input = document.createElement("input")
+        submit = document.createElement("button"),
+        submitFunction = function() {
+            if (input.value) {
+                connection.send(input.value);
+                document.body.removeChild(prompt);
+            }
+        }
+
+    prompt.className = "name-prompt";
+    input.placeholder = "Your name..."
+    submit.addEventListener("click", submitFunction);
+    input.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") submitFunction();
+    });
+    title.appendChild(document.createTextNode("Welcome!"));
+    submit.appendChild(document.createTextNode("Submit"));
+    prompt.appendChild(title);
+    prompt.appendChild(input);
+    prompt.appendChild(submit);
+    document.body.appendChild(prompt);
+}
+
+function onOpen() {
+    // TODO: Get name from cookie if it exists
+    promptName()
+}
+
 function onClose(e) {
     alert(e.reason);
-    console.log(e);
 }
 
 function onMessage(e) {
-    console.log("Server: " + e.data);
     addMessage(e.data, "message-left");
 }
 
 function init() {
     // window.onerror = function() {return true;}; // Uncomment when published
     connection = new WebSocket("ws://localhost:9876");
+    connection.onopen = onOpen;
     connection.onclose = onClose;
     connection.onmessage = onMessage;
 

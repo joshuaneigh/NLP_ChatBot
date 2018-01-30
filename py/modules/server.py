@@ -52,7 +52,6 @@ def handle_client(conn, addr):
         try:
             data = conn.recv(4096)
             if (not data) or (data[0] == 0x88 and data[1] == 0x82):
-                print(addr, "Disconnected with null response")
                 break
             elif not len(name):
                 name = get_str_from_socket_data(data)
@@ -71,6 +70,8 @@ def handle_client(conn, addr):
     CLIENTS.pop(addr, None)
     if name:
         print(addr, "Disconnected as", name)
+    else:
+        print(addr, "Disconnected with null response")
 
 
 def handshake(conn):

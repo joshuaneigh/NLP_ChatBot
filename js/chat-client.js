@@ -47,6 +47,7 @@ function promptName() {
         submitFunction = function() {
             if (input.value) {
                 connection.send(input.value);
+                document.cookie = "username=" + input.value;
                 document.body.removeChild(prompt);
             }
         }
@@ -65,9 +66,18 @@ function promptName() {
     document.body.appendChild(prompt);
 }
 
+function getCookie(name) {
+    let value = "; " + document.cookie,
+        parts = value.split("; " + name + "=");
+    if (parts.length == 2) return parts.pop().split(";").shift();
+}
+
 function onOpen() {
     // TODO: Get name from cookie if it exists
-    promptName()
+    name = getCookie("username");
+    if (name !== "undefined") connection.send(name);
+    else promptName();
+
 }
 
 function onClose(e) {

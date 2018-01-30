@@ -1,4 +1,4 @@
-from threading import Thread
+import threading
 import socket
 import hashlib
 import base64
@@ -14,7 +14,8 @@ HANDSHAKE_RESP = \
     b"\r\n"
 HOST = b''
 PORT = 9876
-CLIENTS = []
+CLIENTS = {}
+THREADS = []
 
 
 def get_str_from_socket_data(data):
@@ -42,14 +43,20 @@ def handle_client(conn, addr):
     while 1:
         try:
             data = conn.recv(4096)
+            if not data:
+                break
+            print(addr, ": ", get_str_from_socket_data(data), sep="")
+        except socket.timeout:
+            continue
         except ConnectionResetError:
             break
-        if not data:
+        except OSError:
             break
-        print(addr, ": ", get_str_from_socket_data(data), sep="")
-        message_client(conn, "Message received")
-    print("Connection closed by", addr)
+
     conn.close()
+    CLIENTS.pop(addr, None)  # None prevents KeyError if client not added to dictionary
+    THREADS.remove(threading.current_thread())
+    print("Client disconnected at", addr)
 
 
 def handshake(conn):
@@ -62,19 +69,20 @@ def handshake(conn):
             headers[parts[0]] = parts[1].encode('utf-8')
     headers['code'] = lines[len(lines) - 1]
     key = headers['Sec-WebSocket-Key']
-    resp_data = HANDSHAKE_RESP % ((base64.b64encode(hashlib.sha1(key + MAGIC).digest()),))
+    resp_data = HANDSHAKE_RESP % (base64.b64encode(hashlib.sha1(key + MAGIC).digest()),)
     conn.send(resp_data)
 
 
-def launch():
+def acquire_socket():
     acquire_notified = False
-    print("Starting server...")
     while 1:
         try:
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.bind((HOST, PORT))
             s.listen(5)
-            break
+            if acquire_notified:
+                print()
+            return s
         except OSError:
             if acquire_notified:
                 sys.stdout.write(".")
@@ -85,13 +93,43 @@ def launch():
                 acquire_notified = True
             time.sleep(3)  # 3 seconds
             continue
-    if acquire_notified:
-        print()
-    while 1:
-        print("Listening for connection on port", PORT, "...", sep=" ")
-        conn, addr = s.accept()
-        handshake(conn)
-        print('Connected opened by', addr)
-        Thread(target=handle_client, args=(conn, addr)).start()
 
-# TODO: Close listening socket from another thread to cancel s.accept()
+
+def handle_server(s):
+    print("Server established on port", PORT)
+    while 1:
+        try:
+            conn, addr = s.accept()
+            conn.settimeout(5)
+            handshake(conn)
+            print("Client connected at", addr)
+            CLIENTS[addr] = conn
+            t = threading.Thread(target=handle_client, args=(conn, addr))
+            THREADS.append(t)
+            t.start()
+        except ConnectionAbortedError:
+            print("Socket closed by server")
+            break
+
+
+def launch():
+    print("\nStarting server...")
+    s = acquire_socket()
+    server_thread = threading.Thread(target=handle_server, args=(s,))
+    THREADS.append(server_thread)
+    server_thread.start()
+    while 1:
+        i = input().strip()
+        if i == "q" or i == "quit":
+            print("Killing server with", len(THREADS), "threads...")
+            s.close()
+            for client in CLIENTS:
+                CLIENTS[client].close()
+            for t in THREADS:
+                t.join()
+            print("Server terminated\n")
+            return
+        else:
+            for client in CLIENTS:
+                message_client(CLIENTS[client], i)
+            print("Successfully messaged", len(CLIENTS.keys()), "client(s)")

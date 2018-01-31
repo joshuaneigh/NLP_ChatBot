@@ -1,7 +1,34 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
+
 # Author: Joshua Neighbarger
 # Version: 30 January 2018
 # Email: jneigh@uw.edu
+
+""" WebSocket Server
+
+This module demonstrates and handles an HTML client and Python server interaction through use of WebSockets. Each
+client communicates with the server through its own listener thread on the specified network port by first sending
+its nickname, followed by any plaintext (yet encoded) messages it wishes to send. The server outputs these messages
+to its console and can interact through any of the following commands:
+
+    "q": Quits/Kills the server and disconnects all clients
+    other: Sends typed message to all clients
+
+Attributes:
+    GUID (str): Globally Unique Identifier is used to add a false sense of integrity to the WebSocket protocol.
+    HANDSHAKE_RESP (str): HTTP handshake response format. Necessary for client to recognize connection as valid.
+    HOST (str): The hostname which this server is run on. If localhost, leave as a null string.
+    PORT (str): The statically defined port on which the server will be hosted
+    CLIENTS (dict): Maps all client addresses/names to their respective connection.
+    THREADS (list): Contains all active Threads currently running from this module.
+
+Todo:
+    * Add returns definitions to docstrings
+    * Adapt server to use SSL/TLS encryption and secure sockets
+    * Abstract data into Python objects
+
+"""
 
 import threading
 import socket
@@ -10,7 +37,7 @@ import base64
 import time
 import sys
 
-MAGIC = b'258EAFA5-E914-47DA-95CA-C5AB0DC85B11'
+GUID = b'258EAFA5-E914-47DA-95CA-C5AB0DC85B11'
 HANDSHAKE_RESP = \
     b"HTTP/1.1 101 Switching Protocols\r\n" + \
     b"Upgrade: websocket\r\n" + \
@@ -23,7 +50,15 @@ CLIENTS = {}
 THREADS = []
 
 
-def get_str_from_socket_data(data):
+def get_str_from_socket_data(data: str):
+    """Encodes and unmasks str object from the passed HTTP response.
+
+    Args:
+        data: The decoded and masked byte string data from the HTTP client.
+
+    Returns:
+        Plaintext Python str
+    """
     # data comes in as byte_string
     data_byte = bytearray(data)
     # data_len is the length of the string
@@ -37,14 +72,36 @@ def get_str_from_socket_data(data):
     return str_data
 
 
-def message_client(conn, message):
+def message_client(conn: socket, message: str):
+    """Sends decoded string to client on given socket.
+
+    Args:
+        conn: The client's respective connection.
+        message: The encoded string message which will be sent.
+
+    Returns:
+        None
+    """
     resp = bytearray([0b10000001, len(message)])
     for d in bytearray(message, 'utf-8'):
         resp.append(d)
     conn.sendall(resp)
 
 
-def handle_client(conn, addr):
+def handle_client(conn: socket, addr: tuple):
+    """Handles messages from client at the given socket and address.
+
+    The first response is decoded and used to reference the client with a preferred "nickname" instead of their address
+    for front-facing applications.
+
+    Args:
+        conn: The client's respective connection.
+        addr: The address at which the client is connected. The tuple contains the client's IP address, followed by
+            their socket number.
+
+    Returns:
+        None
+    """
     print(addr, "Connection opened. Waiting for nickname...")
     CLIENTS[addr] = conn
     name = ""
@@ -66,7 +123,7 @@ def handle_client(conn, addr):
             break
 
     conn.close()
-    THREADS.remove(threading.current_thread())  # TODO: Figure out why threads aren't removed from list
+    THREADS.remove(threading.current_thread())
     CLIENTS.pop(addr, None)
     if name:
         print(addr, "Disconnected as", name)
@@ -74,7 +131,15 @@ def handle_client(conn, addr):
         print(addr, "Disconnected with null response")
 
 
-def handshake(conn):
+def handshake(conn: socket):
+    """Sends HTTP handshake response to HTML WebSocket so that the connection is accepted by the client.
+
+    Args:
+        conn: The client's respective connection.
+
+    Returns:
+        None
+    """
     data = conn.recv(4096)
     headers = {}
     lines = data.splitlines()
@@ -84,11 +149,16 @@ def handshake(conn):
             headers[parts[0]] = parts[1].encode('utf-8')
     headers['code'] = lines[len(lines) - 1]
     key = headers['Sec-WebSocket-Key']
-    resp_data = HANDSHAKE_RESP % (base64.b64encode(hashlib.sha1(key + MAGIC).digest()),)
+    resp_data = HANDSHAKE_RESP % (base64.b64encode(hashlib.sha1(key + GUID).digest()),)
     conn.send(resp_data)
 
 
-def acquire_socket():
+def acquire_socket() -> socket:
+    """Continually tries to start the server on the globally defined socket. Returns the socket when it is opened.
+
+    Returns:
+        The acquired server socket.
+    """
     acquire_notified = False
     while 1:
         try:
@@ -110,7 +180,18 @@ def acquire_socket():
             continue
 
 
-def handle_server(s):
+def handle_server(s: socket):
+    """Listens for new connections to this server.
+
+    Handles new clients by establishing their connection and creating a threaded handler for each client to listen for
+    responses or messages.
+
+    Args:
+        s: The socket on which the server will listen for new clients.
+
+    Returns:
+        None
+    """
     print("Server established on port", PORT)
     while 1:
         try:
@@ -126,6 +207,11 @@ def handle_server(s):
 
 
 def launch():
+    """Starts the server.
+
+    Returns:
+        None
+    """
     print("\nStarting server...")
     s = acquire_socket()
     server_thread = threading.Thread(target=handle_server, args=(s,))

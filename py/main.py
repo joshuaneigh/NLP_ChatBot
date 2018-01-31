@@ -4,6 +4,7 @@
 # Email: jneigh@uw.edu
 
 import importlib
+import sys
 
 # Color     Text    BG  |   Style
 # Black     30      40  |   No Effect   0
@@ -25,19 +26,28 @@ METADATA = {
 }
 HEADER = METADATA["App Name"][0] + ",  " + METADATA["Version"][0]
 PROMPT = ">>>:  "
+MODULES = {}
 
 
 def launch(*args):
     try:
+
         if not args:
             args = input("What to launch? ").strip().split()
         else:
             args = args[0]
-        module = importlib.import_module("." + args[0], MODULE_PKG)
+
+        if args[0] in MODULES:
+            module = importlib.reload(MODULES[args[0]])
+        else:
+            module = importlib.import_module("." + args[0], MODULE_PKG)
+            MODULES[args[0]] = module
+
         if len(args) == 1:
             module.launch()
         else:
             module.launch(args)
+
     except ModuleNotFoundError:
         print("ERR:  No such module (\"", args[0], "\")", sep="")
     except TypeError as e:

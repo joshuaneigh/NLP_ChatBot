@@ -122,6 +122,8 @@ def import_module(filename):
             COMMANDS = dict(COMMANDS, **module.get_commands())
         except AttributeError:
             print("WARNING:  \"", filename, "\" module has no defined attribute \'get_commands\'", sep='')
+        except TypeError:
+            print("ERR:  \"", filename, "\" module's command definition is not in the proper format", sep='')
         print("Module \"", filename, "\" loaded", sep="")
         return module
     except ModuleNotFoundError:

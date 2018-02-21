@@ -80,11 +80,19 @@ class MyTagger:
             dump(self.tagger, out, -1)
 
 
-def launch():
-    i = input("What to tag?  ")
-    tagger = MyTagger("brown_2.pickle")
+def test_tag():
+    message = input("What to tag?  ")
+    tagger = MyTagger()
     try:
         print("Accuracy:", tagger.train(brown))
     except ZeroDivisionError:
         pass
-    print(tagger.tag(i))
+    print(tagger.tag(message))
+
+
+def get_commands():
+    return {"tag": (test_tag, 0, "Tags the passed message and outputs to the console.")}
+
+
+def launch():
+    test_tag()

@@ -30,8 +30,6 @@ Attributes:
         importlib (if you're reading this and know a better way, please email me).
 
 Todo:
-    * Consider defining an auto-import feature which will either automatically import all modules from the modules
-        folder or import all modules from a defined external file (likely the former rather than the latter).
     * Add escape tokens to prompts and messages to allow the console to be styled, as described in TEXT_FORMAT.
 
 """

@@ -30,9 +30,6 @@ Attributes:
         importlib (if you're reading this and know a better way, please email me).
 
 Todo:
-    * Add returns definitions to docstrings
-    * Consider exporting the COMMAND definitions to an external Python module to allow for dynamically defined modules.
-        Methods may be referenced to the imported module and said module may be handled as a plugin.
     * Consider defining an auto-import feature which will either automatically import all modules from the modules
         folder or import all modules from a defined external file (likely the former rather than the latter).
     * Add escape tokens to prompts and messages to allow the console to be styled, as described in TEXT_FORMAT.
@@ -40,14 +37,16 @@ Todo:
 """
 
 import importlib
+import os
 
 
-def launch(*args: tuple):
+def launch_module(*args: tuple):
     """Dynamically launches a named module.
 
     Passed arguments are optional, and will be prompted if not defined. Modules
     are loaded on their first call and are reloaded after each subsequent call to allow for the module to be edited
-    or created and then launched with this attribute without needing to restart the module.
+    or created and then launched with this attribute without needing to restart the module. All modules will implement
+    the launch method to utilize this functionality.
 
     Args:
         *args: The arguments passed to this function.
@@ -55,28 +54,104 @@ def launch(*args: tuple):
     Returns:
         None
     """
-    try:
+    if not args:
+        args = input("What to launch? ").strip().split()
+    else:
+        args = args[0]
 
-        if not args:
-            args = input("What to launch? ").strip().split()
-        else:
-            args = args[0]
-
-        if args[0] in MODULES:
-            module = importlib.reload(MODULES[args[0]])
-        else:
-            module = importlib.import_module("." + args[0], MODULE_PKG)
-            MODULES[args[0]] = module
-
+    module = import_module(args[0])
+    if module:
         if len(args) == 1:
             module.launch()
         else:
             module.launch(args)
+    else:
+        print("Module \"", args[0], "\" not launched", sep="")
 
+
+def test_module(*args: tuple):
+    """Dynamically tests a named module.
+
+    Passed arguments are optional, and will be prompted if not defined. Modules
+    are loaded on their first call and are reloaded after each subsequent call to allow for the module to be edited
+    or created and then tested with this attribute without needing to restart the module. All modules will implement
+    the launch method to utilize this functionality. Modules which implement the test function return a boolean True or
+    False, indicating if that module passed all of its tests.
+
+    Args:
+        *args: The arguments passed to this function.
+
+    Returns:
+        If the specified module passed all of its tests.
+    """
+    if not args:
+        args = input("What to test? ").strip().split()
+    else:
+        args = args[0]
+
+    module = import_module(args[0])
+    if module:
+        if len(args) == 1:
+            return module.test()
+        else:
+            return module.test(args)
+    else:
+        print("Module \"", args[0], "\" not tested", sep="")
+
+
+def import_module(filename):
+    """ Imports the specified module.
+
+    Imported modules are added to the MODULES attribute, and its commands, if any, are added to the COMMANDS attribute.
+
+    Args:
+        filename: The file in which the module is contained.
+
+    Returns:
+        The newly imported or reimported module.
+    """
+    global COMMANDS
+    global MODULES
+    try:
+        if type(filename) is list:
+            filename = filename[0]
+        if filename in MODULES:
+            module = importlib.reload(MODULES[filename])
+        else:
+            module = importlib.import_module("." + filename, MODULE_PKG)
+            MODULES[filename] = module
+        try:
+            COMMANDS = dict(COMMANDS, **module.get_commands())
+        except AttributeError:
+            print("WARNING:  \"", filename, "\" module has no defined attribute \'get_commands\'", sep='')
+        print("Module \"", filename, "\" loaded", sep="")
+        return module
     except ModuleNotFoundError:
-        print("ERR:  No such module (\"", args[0], "\")", sep="")
-    except TypeError as e:
-        print("ERR:  ", args[0], ".", e, sep="")
+        print("ERR:  No such module (\"", filename, "\")", sep="")
+        return None
+
+
+def import_all_commands():
+    """ Imports all modules within MODULE_PKG.
+
+    Returns:
+        None
+    """
+    for filename in os.listdir(MODULE_PKG):
+        if filename.endswith(".py"):
+            filename = filename[:-3]
+            print("Loading module " + filename)
+            import_module(filename)
+
+
+def echo(var: str):
+    var = var[0].lower()
+    if var == "commands":
+        print(*[cmd for cmd in COMMANDS], sep='\n')
+    elif var == "modules":
+        print(*[mod for mod in MODULES], sep='\n')
+    else:
+        print("ERR: Variable not registered or found")
 
 
 def show_help():
@@ -114,12 +189,13 @@ def main():
         None
     """
     print(HEADER)
+    import_all_commands()
     while 1:
         i = input(PROMPT).strip().split()
         if not i:
             continue
         elif not COMMANDS.get(i[0]):
-            print("ERR:  Command does not exist or is misspelled")
+            print("ERR:  Command \"", i[0], "\" does not exist or is misspelled", sep='')
         elif (COMMANDS.get(i[0])[1] != len(i) - 1) and (COMMANDS.get(i[0])[1] != -1):
             print("ERR: Invalid number of args for command ", i[0],
                   "(defined: ", COMMANDS.get(i[0])[1], ", passed: ", len(i) - 1, ")", sep="")
@@ -147,12 +223,16 @@ COMMANDS = {
         "help": (show_help, 0, "Outputs each command and their description"),
         "about": (info, 0, "Outputs the metadata of the application"),
         "info": (info, 0, "Outputs the metadata of the application"),
-        "mod": (launch, -1, "Launches the specified module with the defined args")
+        "launch": (launch_module, -1, "Launches the specified module with the defined args"),
+        "test": (test_module, -1, "Tests the specified module with the defined args"),
+        "import_all": (import_all_commands, 0, "Loads all commands from modules"),
+        "import": (import_module, 1, "Loads a specified module"),
+        "echo": (echo, 1, "Echos passed variable to the console")
     }
 METADATA = {
     "Authors": ("Joshua Neighbarger", "Karan Singla", "Zachary Chandler"),
     "App Name": ("NLP Chat Console (Alan)",),
-    "Version": ("30 January 2018",)
+    "Version": ("21 February 2018",)
 }
 HEADER = METADATA["App Name"][0] + ",  " + METADATA["Version"][0]
 PROMPT = ">>>:  "

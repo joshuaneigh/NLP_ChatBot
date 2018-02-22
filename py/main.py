@@ -34,7 +34,6 @@ Attributes:
     COLORS_ENABLED (bool): If the console log colors are to be enabled or disabled.
 
 Todo:
-    * Add escape tokens to prompts and messages to allow the console to be styled, as described in TEXT_FORMAT.
     * Separate launched module to separate process and console to allow for use of both modules synchronously.
     * Clean up argument parameters between functions to properly implement optional parameters.
 

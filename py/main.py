@@ -1,6 +1,8 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
+
 # Author: Joshua Neighbarger
-# Version: 30 January 2018
+# Version: 22 February 2018
 # Email: jneigh@uw.edu
 
 """DynamicShell
@@ -28,9 +30,13 @@ Attributes:
     MODULES (dict): Maps all loaded module names to the respective module reference. This simplifies the process of
         reloading modules and eliminates the need to interact with sys.modules and crying over how poorly documented
         importlib (if you're reading this and know a better way, please email me).
+    LOG_LEVEL (int): The level of logs which are to be displayed. See the log method in this module.
+    COLORS_ENABLED (bool): If the console log colors are to be enabled or disabled.
 
 Todo:
     * Add escape tokens to prompts and messages to allow the console to be styled, as described in TEXT_FORMAT.
+    * Separate launched module to separate process and console to allow for use of both modules synchronously.
+    * Clean up argument parameters between functions to properly implement optional parameters.
 
 """
 
@@ -121,13 +127,12 @@ def import_module(filename):
         try:
             COMMANDS = dict(COMMANDS, **module.get_commands())
         except AttributeError:
-            print("WARNING:  \"", filename, "\" module has no defined attribute \'get_commands\'", sep='')
+            log(1, "\"", filename, "\" module has no defined attribute \'get_commands\'", sep='')
         except TypeError:
-            print("ERR:  \"", filename, "\" module's command definition is not in the proper format", sep='')
-        print("Module \"", filename, "\" loaded", sep="")
+            log(0, "\"", filename, "\" module's command definition is not in the proper format", sep='')
         return module
     except ModuleNotFoundError:
-        print("ERR:  No such module (\"", filename, "\")", sep="")
+        log(0, "No such module (\"", filename, "\")", sep="")
         return None
 
 
@@ -137,21 +142,26 @@ def import_all_commands():
     Returns:
         None
     """
+    attempted = 0
+    succeeded = 0
+    log(2, "Loading modules...")
     for filename in os.listdir(MODULE_PKG):
         if filename.endswith(".py"):
+            attempted += 1
             filename = filename[:-3]
-            print("Loading module " + filename)
-            import_module(filename)
+            if import_module(filename):
+                succeeded += 1
+    log(2, "Successfully loaded", succeeded, "of", attempted, "modules")
 
 
 def echo(var: str):
     var = var[0].lower()
     if var == "commands":
-        print(*[cmd for cmd in COMMANDS], sep='\n')
+        log(2, *[cmd for cmd in COMMANDS], sep='\n\t')
     elif var == "modules":
-        print(*[mod for mod in MODULES], sep='\n')
+        log(2, *[mod for mod in MODULES], sep='\n\t')
     else:
-        print("ERR: Variable not registered or found")
+        log(0, "Variable not registered or found")
 
 
 def show_help():
@@ -180,6 +190,41 @@ def info():
         print()
 
 
+def log(level: int, *args, **kwargs):
+    """Logs the message to console.
+
+    Writes the passed message to the console at the defined log level. Each log level is tagged with their name and is
+    color-coded for the standard terminal. Multi-color support can be disabled globally, as well as the filtered log
+    level. The global log level, LOG_LEVEL, must be greater than the local level. For example, all logs are disabled if
+    the global log level is 0. Log levels are defined as follows:
+        {
+            ERROR: 0,
+            WARNING: 1,
+            DEBUG: 2
+        }
+
+    Args:
+        level: The level of log message
+        args: The message to be written
+        kwargs: The additional keyword-based args for the print statement
+
+    Returns:
+        None
+    """
+    kwargs["flush"] = True
+    if level is 0 and LOG_LEVEL > 0:
+        print((TEXT_FORMAT["error"] if COLORS_ENABLED else "") + "ERR:  ", *args,
+              (TEXT_FORMAT["default"] if COLORS_ENABLED else ""), **kwargs)
+    elif level is 1 and LOG_LEVEL > 1:
+        print((TEXT_FORMAT["warning"] if COLORS_ENABLED else "") + "WARNING:  ", *args,
+              (TEXT_FORMAT["default"] if COLORS_ENABLED else ""),  **kwargs)
+    elif level is 2 and LOG_LEVEL > 2:
+        print((TEXT_FORMAT["debug"] if COLORS_ENABLED else "") + "DEBUG:  ", *args,
+              (TEXT_FORMAT["default"] if COLORS_ENABLED else ""), **kwargs)
+    else:
+        print(" ".join(map(str, args)))
+
+
 def main():
     """The main method.
 
@@ -188,17 +233,17 @@ def main():
     Returns:
         None
     """
-    print(HEADER)
+    print((TEXT_FORMAT["default"] if COLORS_ENABLED else "") + HEADER)
     import_all_commands()
     while 1:
         i = input(PROMPT).strip().split()
         if not i:
             continue
         elif not COMMANDS.get(i[0]):
-            print("ERR:  Command \"", i[0], "\" does not exist or is misspelled", sep='')
+            log(2, "Command \"", i[0], "\" does not exist or is misspelled", sep='')
         elif (COMMANDS.get(i[0])[1] != len(i) - 1) and (COMMANDS.get(i[0])[1] != -1):
-            print("ERR: Invalid number of args for command ", i[0],
-                  "(defined: ", COMMANDS.get(i[0])[1], ", passed: ", len(i) - 1, ")", sep="")
+            log(2, "Invalid number of args for command ", i[0],
+                "(defined: ", COMMANDS.get(i[0])[1], ", passed: ", len(i) - 1, ")", sep="")
         elif len(i) == 1:
             COMMANDS[i[0]][0]()
         else:
@@ -215,11 +260,15 @@ def main():
 # Cyan      36      46  |
 # White     37      47  |
 TEXT_FORMAT = {
-    "input": "\033[1;32;40m"  # normal green_text black_background
+    "default": "\033[0;37;40m",
+    "warning": "\033[0;33;40m",
+    "debug": "\033[0;36;40m",
+    "error": "\033[0;31;40m"
 }
 MODULE_PKG = "modules"
 COMMANDS = {
         "quit": (quit, 0, "Exit the program"),
+        "q": (quit, 0, "Exit the program"),
         "help": (show_help, 0, "Outputs each command and their description"),
         "about": (info, 0, "Outputs the metadata of the application"),
         "info": (info, 0, "Outputs the metadata of the application"),
@@ -237,6 +286,8 @@ METADATA = {
 HEADER = METADATA["App Name"][0] + ",  " + METADATA["Version"][0]
 PROMPT = ">>>:  "
 MODULES = {}
+LOG_LEVEL = 4
+COLORS_ENABLED = True
 
 if __name__ == "__main__":
     main()

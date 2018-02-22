@@ -206,8 +206,8 @@ def handle_server(s: socket):
             break
 
 
-def launch():
-    """Starts the server.
+def start_server():
+    """ Starts the server.
 
     Returns:
         None
@@ -232,3 +232,21 @@ def launch():
             for client in CLIENTS:
                 message_client(CLIENTS[client], i)
             print("Successfully messaged", len(CLIENTS.keys()), "client(s)")
+
+
+def get_commands():
+    """Defines commands for this module.
+
+    Returns:
+        Dictionary of commands related to this module
+    """
+    return {"start_server": (start_server, 0, "Starts the message server.")}
+
+
+def launch():
+    """The main method.
+
+    Returns:
+        None
+    """
+    start_server()

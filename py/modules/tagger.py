@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # Author: Joshua Neighbarger
-# Version: 31 January 2018
+# Version: 22 February 2018
 # Email: jneigh@uw.edu
 
 """ MyTagger

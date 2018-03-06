@@ -13,11 +13,11 @@ class Model:
         self.responses = {}
         self.huh = []
 
-        trainSet1(self)
-        trainSet2(self)
-
     def train(self, m1, m2):
-        key = self.parser.parse(m1)
+        if m1 != None:
+            key = self.parser.parse(m1)
+        else:
+            key = None
 
         if key in self.responses:
             responses = self.responses[key]
@@ -54,8 +54,11 @@ class Model:
         return "pass"
     
     def findResponse(self, m):
-        key = self.parser.parse(m)
-
+        if (m != None):
+            key = self.parser.parse(m)
+        else:
+            key = None
+        
         if not key in self.responses:
             key = None
 
@@ -63,20 +66,22 @@ class Model:
 
 
 def trainSet1(model):
-    model.train("test1", "test2")
-    model.train("test1", "test3")
-    model.train("test1", "test4")
-    
-    model.train("test2", "test5")
+    pass
 
 def trainSet2(model):
     model.train(None, "what do you mean?")
 
 def pickleModel(model):
     pickle.dump(model, open("model.p", "wb"))
-    
+
+def unpickleModel():
+	return pickle.load(open("model.p", "rb"))
+	
 if __name__ == "__main__":
-    model = Model()
-    pickleModel(model)
-##    print(model.findResponse(""))
-    print("...")
+##    model = unpickleModel()
+##    trainSet1(model)
+##    trainSet2(model)
+##    pickleModel(model)
+##    print(model.findResponse(None))
+##    print("...")
+    pass

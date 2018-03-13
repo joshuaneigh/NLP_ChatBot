@@ -13,6 +13,17 @@ class Model:
         self.responses = {}
         self.huh = []
 
+    def findResponse(self, m):
+        if (m != None):
+            key = self.parser.parse(m)
+
+            if not key in self.responses:
+                key = None
+        else:
+            key = None
+        
+        return self.__chooseResponse(self.responses[key])
+    
     def train(self, m1, m2):
         if m1 != None:
             key = self.parser.parse(m1)
@@ -33,16 +44,16 @@ class Model:
         else:
             self.responses[key] = [[m2, 1]]
 
-    def __getResponse(self, responses):
+    def __chooseResponse(self, possibleResponses):
         total = 0
 
-        for r in responses:
+        for r in possibleResponses:
             total += r[1]
 
         choice = random.randint(0, total)
         total = 0
         
-        for r in responses:
+        for r in possibleResponses:
             total += r[1]
             if choice <= total:
                 return r[0]
@@ -53,35 +64,55 @@ class Model:
     def __getUnkownResponse(self):
         return "pass"
     
-    def findResponse(self, m):
-        if (m != None):
-            key = self.parser.parse(m)
+
+def trainCustom(model):
+    trainFromFile("..\\..\\training\\custom\\generic.txt", model)
+
+def trainCornwell(model):
+     trainFromFile("..\\..\\training\\cornwell\\simplified.txt", model)
+
+def trainNPS(model):
+    trainFromFile("..\\..\\training\\nps-subset\\10-26-teens_706posts.xml.txt", model)
+    trainFromFile("..\\..\\training\\nps-subset\\11-08-teens_706posts.xml.txt", model)
+    trainFromFile("..\\..\\training\\nps-subset\\11-09-teens_706posts.xml.txt", model)
+
+def trainUnkown(model):
+    model.train(None, "hmm")
+    model.train(None, "okay")
+    model.train(None, "yeah")
+
+def trainFromFile(fileName, model):
+    f = open(fileName, "r")
+    last = None
+
+    for line in f:
+        if line.isspace():
+            line = None
         else:
-            key = None
+            line = line[:-1]
         
-        if not key in self.responses:
-            key = None
-
-        return self.__getResponse(self.responses[key])
-
-
-def trainSet1(model):
-    pass
-
-def trainSet2(model):
-    model.train(None, "what do you mean?")
+        if last != None and line != None:
+            model.train(last, line)
+        
+        last = line
+        
+    f.close()
 
 def pickleModel(model):
     pickle.dump(model, open("model.p", "wb"))
 
 def unpickleModel():
 	return pickle.load(open("model.p", "rb"))
-	
+
 if __name__ == "__main__":
-##    model = unpickleModel()
-##    trainSet1(model)
-##    trainSet2(model)
-##    pickleModel(model)
+    model = Model()
+    
+    trainCornwell(model)
+    trainCustom(model)
+    trainNPS(model)
+    trainUnkown(model)
+    
 ##    print(model.findResponse(None))
-##    print("...")
-    pass
+##    print(model.findResponse("hi"))
+    
+    pickleModel(model)

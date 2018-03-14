@@ -69,6 +69,10 @@ class Model:
 def trainCustom(model):
     file = os.path.abspath(os.path.join(__file__, '../../../training/custom/generic.txt'))
     trainFromFile(file, model)
+    file = os.path.abspath(os.path.join(__file__, '../../../training/custom/misc.txt'))
+    trainFromFile(file, model)
+    file = os.path.abspath(os.path.join(__file__, '../../../training/custom/bot_paranoia.txt'))
+    trainFromFile(file, model)
 
 def trainCornwell(model):
     file = os.path.abspath(os.path.join(__file__, '../../../training/cornwell/simplified.txt'))

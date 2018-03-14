@@ -84,11 +84,20 @@ def message_client(conn: socket, message: str):
     Returns:
         None
     """
-    resp = bytearray([0b10000001, len(message)])
-    for d in bytearray(message, 'utf-8'):
-        resp.append(d)
-    conn.sendall(resp)
-    print(conn.getpeername(), "Server:", message)
+    if len(message) > 100:
+        print("Message over 50 chars long.")
+        message_client(conn, message[:99])
+        message_client(conn, message[99:])
+    else:
+        try:
+            resp = bytearray([0b10000001, len(message)])
+        except ValueError:
+            message_client(conn, generate_message_response(message))
+        for d in bytearray(message, 'utf-8'):
+            resp.append(d)
+        conn.sendall(resp)
+        print(conn.getpeername(), "Server:", message)
+
 
 
 def handle_client(conn: socket, addr: tuple):
@@ -110,7 +119,7 @@ def handle_client(conn: socket, addr: tuple):
     name = ""
     while 1:
         try:
-            data = conn.recv(4096)
+            data = conn.recv(8192)
             if (not data) or (data[0] == 0x88 and data[1] == 0x82):
                 break
             elif not len(name):
@@ -217,7 +226,17 @@ def start_server():
     Returns:
         None
     """
-    print("\nStarting server...")
+    global NLP_MODEL
+    print("\nLoading NLP model...")
+    if os.path.exists(os.path.abspath(os.path.join(__file__, '../../model.p'))):
+        print("Opening pickle...")
+        NLP_MODEL = importlib.import_module("_model", "../objects").unpickleModel()
+        pass
+    else:
+        print("Training data...")
+        NLP_MODEL = importlib.import_module("_model", "../objects").generate()
+        pass
+    print("Starting server...")
     s = acquire_socket()
     server_thread = threading.Thread(target=handle_server, args=(s,))
     THREADS.append(server_thread)
@@ -260,11 +279,3 @@ def launch():
         None
     """
     start_server()
-
-
-if os.path.exists(os.path.abspath(os.path.join(__file__, '../../model.p'))):
-    NLP_MODEL = importlib.import_module("_model", "../objects").unpickleModel()
-    pass
-else:
-    NLP_MODEL = importlib.import_module("_model", "../objects").generate()
-    pass

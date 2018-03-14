@@ -1,4 +1,5 @@
 DEFAULT_ERROR = 'Error:  Server connection closed. Is it running?';
+let name = "";
 
 function addMessage(text, className) {
     let node = document.getElementById("messages"),
@@ -42,7 +43,7 @@ function sendMessage() {
 function promptName() {
     let prompt = document.createElement("div"),
         title = document.createElement("h3"),
-        input = document.createElement("input")
+        input = document.createElement("input"),
         submit = document.createElement("button"),
         submitFunction = function() {
             if (input.value) {
@@ -50,10 +51,10 @@ function promptName() {
                 document.cookie = "username=" + input.value;
                 document.body.removeChild(prompt);
             }
-        }
+        };
 
     prompt.className = "name-prompt";
-    input.placeholder = "Your name..."
+    input.placeholder = "Your name...";
     submit.addEventListener("click", submitFunction);
     input.addEventListener("keydown", function (e) {
         if (e.key === "Enter") submitFunction();
@@ -69,14 +70,14 @@ function promptName() {
 function getCookie(name) {
     let value = "; " + document.cookie,
         parts = value.split("; " + name + "=");
-    if (parts.length == 2) return parts.pop().split(";").shift();
+    if (parts.length === 2) return parts.pop().split(";").shift();
 }
 
 function onOpen() {
-    // TODO: Get name from cookie if it exists
-    name = getCookie("username");
-    if (name !== "undefined") connection.send(name);
-    else promptName();
+    promptName();
+    // name = getCookie("username");
+    // if (name !== "undefined") connection.send(name);
+    // else promptName();
 
 }
 
@@ -89,7 +90,7 @@ function onMessage(e) {
 }
 
 function init() {
-    // window.onerror = function() {return true;}; // Uncomment when published
+    window.onerror = function() {return true;}; // Uncomment when published
     connection = new WebSocket("ws://localhost:9876");
     connection.onopen = onOpen;
     connection.onclose = onClose;

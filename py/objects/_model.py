@@ -13,11 +13,22 @@ class Model:
         self.responses = {}
         self.huh = []
 
-        trainSet1(self)
-        trainSet2(self)
+    def findResponse(self, m):
+        if (m != None):
+            key = self.parser.parse(m)
 
+            if not key in self.responses:
+                key = None
+        else:
+            key = None
+        
+        return self.__chooseResponse(self.responses[key])
+    
     def train(self, m1, m2):
-        key = self.parser.parse(m1)
+        if m1 != None:
+            key = self.parser.parse(m1)
+        else:
+            key = None
 
         if key in self.responses:
             responses = self.responses[key]
@@ -33,16 +44,16 @@ class Model:
         else:
             self.responses[key] = [[m2, 1]]
 
-    def __getResponse(self, responses):
+    def __chooseResponse(self, possibleResponses):
         total = 0
 
-        for r in responses:
+        for r in possibleResponses:
             total += r[1]
 
         choice = random.randint(0, total)
         total = 0
         
-        for r in responses:
+        for r in possibleResponses:
             total += r[1]
             if choice <= total:
                 return r[0]
@@ -53,30 +64,55 @@ class Model:
     def __getUnkownResponse(self):
         return "pass"
     
-    def findResponse(self, m):
-        key = self.parser.parse(m)
 
-        if not key in self.responses:
-            key = None
+def trainCustom(model):
+    trainFromFile("..\\..\\training\\custom\\generic.txt", model)
 
-        return self.__getResponse(self.responses[key])
+def trainCornwell(model):
+     trainFromFile("..\\..\\training\\cornwell\\simplified.txt", model)
 
+def trainNPS(model):
+    trainFromFile("..\\..\\training\\nps-subset\\10-26-teens_706posts.xml.txt", model)
+    trainFromFile("..\\..\\training\\nps-subset\\11-08-teens_706posts.xml.txt", model)
+    trainFromFile("..\\..\\training\\nps-subset\\11-09-teens_706posts.xml.txt", model)
 
-def trainSet1(model):
-    model.train("test1", "test2")
-    model.train("test1", "test3")
-    model.train("test1", "test4")
-    
-    model.train("test2", "test5")
+def trainUnkown(model):
+    model.train(None, "hmm")
+    model.train(None, "okay")
+    model.train(None, "yeah")
 
-def trainSet2(model):
-    model.train(None, "what do you mean?")
+def trainFromFile(fileName, model):
+    f = open(fileName, "r")
+    last = None
+
+    for line in f:
+        if line.isspace():
+            line = None
+        else:
+            line = line[:-1]
+        
+        if last != None and line != None:
+            model.train(last, line)
+        
+        last = line
+        
+    f.close()
 
 def pickleModel(model):
     pickle.dump(model, open("model.p", "wb"))
-    
+
+def unpickleModel():
+	return pickle.load(open("model.p", "rb"))
+
 if __name__ == "__main__":
     model = Model()
+    
+    trainCornwell(model)
+    trainCustom(model)
+    trainNPS(model)
+    trainUnkown(model)
+    
+##    print(model.findResponse(None))
+##    print(model.findResponse("hi"))
+    
     pickleModel(model)
-##    print(model.findResponse(""))
-    print("...")

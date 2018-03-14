@@ -129,6 +129,7 @@ def import_module(filename):
             log(1, "\"", filename, "\" module has no defined attribute \'get_commands\'", sep='')
         except TypeError:
             log(0, "\"", filename, "\" module's command definition is not in the proper format", sep='')
+        log(2, "\"", filename, "\" module loaded", sep='')
         return module
     except ModuleNotFoundError:
         log(0, "No such module (\"", filename, "\")", sep="")

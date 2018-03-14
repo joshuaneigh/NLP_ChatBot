@@ -36,6 +36,7 @@ import hashlib
 import base64
 import time
 import sys
+import importlib
 
 GUID = b'258EAFA5-E914-47DA-95CA-C5AB0DC85B11'
 HANDSHAKE_RESP = \
@@ -50,7 +51,7 @@ CLIENTS = {}
 THREADS = []
 
 
-def get_str_from_socket_data(data: str):
+def get_str_from_socket(data: str):
     """Encodes and unmasks str object from the passed HTTP response.
 
     Args:
@@ -86,6 +87,7 @@ def message_client(conn: socket, message: str):
     for d in bytearray(message, 'utf-8'):
         resp.append(d)
     conn.sendall(resp)
+    print(conn.getpeername(), "Server:", message)
 
 
 def handle_client(conn: socket, addr: tuple):
@@ -111,10 +113,12 @@ def handle_client(conn: socket, addr: tuple):
             if (not data) or (data[0] == 0x88 and data[1] == 0x82):
                 break
             elif not len(name):
-                name = get_str_from_socket_data(data)
+                name = get_str_from_socket(data)
                 print(addr, "Connected as", name)
             else:
-                print(name, ": ", get_str_from_socket_data(data), sep="")
+                message = get_str_from_socket(data)
+                print(conn.getpeername(), ' ', name, ": ", message, sep='')
+                message_client(conn, generate_message_response(message))
         except socket.timeout:
             continue
         except ConnectionResetError:
@@ -234,6 +238,13 @@ def start_server():
             print("Successfully messaged", len(CLIENTS.keys()), "client(s)")
 
 
+def generate_message_response(message: str):
+    global NLP_MODEL
+    if not NLP_MODEL:
+        NLP_MODEL = importlib.import_module("._model", "objects")
+    return NLP_MODEL.findResponse(message)
+
+
 def get_commands():
     """Defines commands for this module.
 
@@ -250,3 +261,6 @@ def launch():
         None
     """
     start_server()
+
+
+NLP_MODEL = None

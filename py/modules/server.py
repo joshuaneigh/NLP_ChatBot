@@ -37,6 +37,7 @@ import base64
 import time
 import sys
 import importlib
+import os
 
 GUID = b'258EAFA5-E914-47DA-95CA-C5AB0DC85B11'
 HANDSHAKE_RESP = \
@@ -239,10 +240,8 @@ def start_server():
 
 
 def generate_message_response(message: str):
-    global NLP_MODEL
-    if not NLP_MODEL:
-        NLP_MODEL = importlib.import_module("._model", "objects")
     return NLP_MODEL.findResponse(message)
+    # return "How are you?"
 
 
 def get_commands():
@@ -263,4 +262,9 @@ def launch():
     start_server()
 
 
-NLP_MODEL = None
+if os.path.exists(os.path.abspath(os.path.join(__file__, '../../model.p'))):
+    NLP_MODEL = importlib.import_module("_model", "../objects").unpickleModel()
+    pass
+else:
+    NLP_MODEL = importlib.import_module("_model", "../objects").generate()
+    pass

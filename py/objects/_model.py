@@ -5,6 +5,7 @@
 
 import pickle
 import random
+import os
 from _parser import Parser
 
 class Model:
@@ -66,15 +67,20 @@ class Model:
     
 
 def trainCustom(model):
-    trainFromFile("..\\..\\training\\custom\\generic.txt", model)
+    file = os.path.abspath(os.path.join(__file__, '../../../training/custom/generic.txt'))
+    trainFromFile(file, model)
 
 def trainCornwell(model):
-     trainFromFile("..\\..\\training\\cornwell\\simplified.txt", model)
+    file = os.path.abspath(os.path.join(__file__, '../../../training/cornwell/simplified.txt'))
+    trainFromFile(file, model)
 
 def trainNPS(model):
-    trainFromFile("..\\..\\training\\nps-subset\\10-26-teens_706posts.xml.txt", model)
-    trainFromFile("..\\..\\training\\nps-subset\\11-08-teens_706posts.xml.txt", model)
-    trainFromFile("..\\..\\training\\nps-subset\\11-09-teens_706posts.xml.txt", model)
+    file = os.path.abspath(os.path.join(__file__, '../../../training/nps-subset/10-26-teens_706posts.xml.txt'))
+    trainFromFile(file, model)
+    file = os.path.abspath(os.path.join(__file__, '../../../training/nps-subset/11-08-teens_706posts.xml.txt'))
+    trainFromFile(file, model)
+    file = os.path.abspath(os.path.join(__file__, '../../../training/nps-subset/11-09-teens_706posts.xml.txt'))
+    trainFromFile(file, model)
 
 def trainUnkown(model):
     model.train(None, "hmm")
@@ -82,7 +88,7 @@ def trainUnkown(model):
     model.train(None, "yeah")
 
 def trainFromFile(fileName, model):
-    f = open(fileName, "r")
+    f = open(fileName, "r", encoding="cp437")
     last = None
 
     for line in f:
@@ -91,7 +97,7 @@ def trainFromFile(fileName, model):
         else:
             line = line[:-1]
         
-        if last != None and line != None:
+        if (last is not None) and (line is not None):
             model.train(last, line)
         
         last = line
@@ -102,17 +108,24 @@ def pickleModel(model):
     pickle.dump(model, open("model.p", "wb"))
 
 def unpickleModel():
-	return pickle.load(open("model.p", "rb"))
+    # THIS_FOLDER = os.path.dirname(os.path.abspath(__file__))
+    # my_file = os.path.join(THIS_FOLDER, 'model.p')
+    return pickle.load(open("model.p", "rb"))
 
-if __name__ == "__main__":
+def generate():
     model = Model()
-    
+    model.__module__ = "_model"
     trainCornwell(model)
     trainCustom(model)
     trainNPS(model)
     trainUnkown(model)
-    
-##    print(model.findResponse(None))
-##    print(model.findResponse("hi"))
-    
+
+    ##    print(model.findResponse(None))
+    ##    print(model.findResponse("hi"))
+
     pickleModel(model)
+    return model
+
+
+if __name__ == "__main__":
+    generate()

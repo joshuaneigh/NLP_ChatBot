@@ -38,6 +38,7 @@ import time
 import sys
 import importlib
 import os
+import _model as model
 
 GUID = b'258EAFA5-E914-47DA-95CA-C5AB0DC85B11'
 HANDSHAKE_RESP = \
@@ -230,11 +231,11 @@ def start_server():
     print("\nLoading NLP model...")
     if os.path.exists(os.path.abspath(os.path.join(__file__, '../../model.p'))):
         print("Opening pickle...")
-        NLP_MODEL = importlib.import_module("_model", "../objects").unpickleModel()
+        NLP_MODEL = model.unpickleModel()
         pass
     else:
         print("Training data...")
-        NLP_MODEL = importlib.import_module("_model", "../objects").generate()
+        NLP_MODEL = model.generate()
         pass
     print("Starting server...")
     s = acquire_socket()
